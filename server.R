@@ -1,0 +1,71 @@
+library(readxl)
+library(ggplot2)
+library(plotly)
+library(crosstalk)
+library(shiny)
+library(scales)
+library(httr)
+library(dplyr)
+
+#-------------------------------------
+# LOAD THE DATABASE
+#-------------------------------------
+
+# GET("https://query.data.world/s/3xii2gmu4uhexxaf52fxhbkbrhrjen", 
+#     write_disk(tf <- tempfile(fileext = ".xlsx")))
+database <- read_excel("www/dataset/Hungarian_first_and_middle_name_db_1954_2016.xlsx",
+                       col_types = "text") %>% 
+  mutate(RANK = as.numeric(RANK))
+
+##### top10 names in 2016
+top10_name = database %>% 
+  filter(YEAR == "2016" & RANK <= 10) %>% 
+  pull(NAME_MALE)
+
+#-------------------------------------
+# SHINY APP
+#-------------------------------------
+
+shinyServer(
+  function(input, output) {
+    
+    data <- reactive({
+      out = database %>% 
+        filter(YEAR >= "2000" & (RANK <= 10 | NAME_MALE %in% top10_name)) %>% 
+        mutate(
+          RANK = if_else(RANK <= 10, RANK, 11),
+          RANK_LABEL = if_else(RANK <= 10, as.character(RANK), "10+"),
+          YEAR = as.numeric(YEAR)
+        )
+      
+      out
+    })
+    
+    output$plot <- renderPlotly({
+      pdf(NULL)
+      db = data()
+      # db = out
+      
+      sd <- SharedData$new(db, ~NAME_MALE, group = "Choose the first name You want to highlight")
+      gg = ggplot(sd, aes(x = YEAR, y = RANK, colour = NAME_MALE, text = NAME_MALE)) + 
+        geom_point(size = 8) + 
+        geom_line(size = 1.1, aes(group = NAME_MALE)) +
+        geom_text(aes(label = paste0("#", RANK_LABEL)), color = "white", size=3.5) +
+        scale_y_reverse("", breaks = seq(1, 11, 1), labels = c(seq(1, 10, 1), "10+"),
+                        limits = c(11, 1)) +
+        scale_x_continuous("", breaks = seq(2000, 2016, 1)) +
+        guides(colour = guide_legend(override.aes = list(size=1))) +
+        theme(legend.position="none",
+              axis.title.y=element_blank(),
+              axis.text.y=element_blank(),
+              axis.ticks.y=element_blank(),
+              panel.background = element_rect(fill = '#34495e'),
+              panel.grid.major = element_blank())
+      
+      gg <- ggplotly(gg, tooltip = c("text")) %>%
+        highlight(on = "plotly_click", persistent = FALSE, selectize = TRUE)  
+      
+      gg
+    })
+  }
+)
