@@ -1,26 +1,31 @@
-library(readxl)
-library(ggplot2)
-library(plotly)
 library(crosstalk)
-library(shiny)
-library(scales)
-library(httr)
 library(dplyr)
+library(ggplot2)
+library(httr)
+library(plotly)
+library(readr)
+library(scales)
+library(shiny)
+library(tidyr)
 
 #-------------------------------------
 # LOAD THE DATABASE
 #-------------------------------------
 
-# GET("https://query.data.world/s/3xii2gmu4uhexxaf52fxhbkbrhrjen", 
-#     write_disk(tf <- tempfile(fileext = ".xlsx")))
-database <- read_excel("www/dataset/Hungarian_first_and_middle_name_db_1954_2016.xlsx",
-                       col_types = "text") %>% 
-  mutate(RANK = as.numeric(RANK))
+# database <- read_excel("www/dataset/Hungarian_first_and_middle_name_db_1954_2016.xlsx",
+#                        col_types = "text") %>% 
+#   mutate(RANK = as.numeric(RANK))
 
-##### top10 names in 2016
+library(dplyr)
+
+database <- read_csv("www/dataset/Common_Chinese_Names.csv") %>% 
+  gather("YEAR", "NAME", -Rank) %>% 
+  rename(RANK = Rank)
+
+##### top10 names in last year
 top10_name = database %>% 
-  filter(YEAR == "2016" & RANK <= 10) %>% 
-  pull(NAME_MALE)
+  filter(YEAR == max(YEAR) & RANK <= 10) %>% 
+  pull(NAME)
 
 #-------------------------------------
 # SHINY APP
@@ -31,7 +36,7 @@ shinyServer(
     
     data <- reactive({
       out = database %>% 
-        filter(YEAR >= "2000" & (RANK <= 10 | NAME_MALE %in% top10_name)) %>% 
+        filter(YEAR >= "2000" & (RANK <= 10 | NAME %in% top10_name)) %>% 
         mutate(
           RANK = if_else(RANK <= 10, RANK, 11),
           RANK_LABEL = if_else(RANK <= 10, as.character(RANK), "10+"),
@@ -46,10 +51,10 @@ shinyServer(
       db = data()
       # db = out
       
-      sd <- SharedData$new(db, ~NAME_MALE, group = "Choose the first name You want to highlight")
-      gg = ggplot(sd, aes(x = YEAR, y = RANK, colour = NAME_MALE, text = NAME_MALE)) + 
+      sd <- SharedData$new(db, ~NAME, group = "Choose the first name You want to highlight")
+      gg = ggplot(sd, aes(x = YEAR, y = RANK, colour = NAME, text = NAME)) + 
         geom_point(size = 8) + 
-        geom_line(size = 1.1, aes(group = NAME_MALE)) +
+        geom_line(size = 1.1, aes(group = NAME)) +
         geom_text(aes(label = paste0("#", RANK_LABEL)), color = "white", size=3.5) +
         scale_y_reverse("", breaks = seq(1, 11, 1), labels = c(seq(1, 10, 1), "10+"),
                         limits = c(11, 1)) +

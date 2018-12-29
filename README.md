@@ -1,14 +1,27 @@
 # Bump Charts in R
 
+<img src="https://img.shields.io/badge/made%20with-R-blue.svg" alt="made with R">
+
 ## TL;DR
 
-This visualization shows the popularity trend of the top10 male first name in 2016 between 2000 and 2016 according to yearly rank of names. There are names which were not always in the top10 between the selected period that’s why there is a 10+ line in the bottom. You can highlight any name by clicking on it or You can also select any of it from the drop-down list.
+This visualization shows the popularity trend of the top 10 first name in 2012 between 2000 and 2012 according to yearly rank of names. There are names which were not always in the top 10 between the selected period that's why there is a "10+" line in the bottom. You can highlight any name by clicking on it or You can also select any of it from the drop-down list.
+
+![screenshot](www/img/screenshot.png)
 
 ## Get Started
 
+```shell
+# Install required packages
+$ Rscript -e 'intsall.packages(c("readxl", "ggplot2", "plotly", "crosstalk", "shiny", "scales", "httr", "dplyr"))'
+
+# Run Shiny
+$ Rscript -e "shiny::runApp(port=8899)"
+```
+
 ## Dataset
 
-[Hungarian first name database @data.world](https://data.world/tarkomatas/hungarian-first-and-middle-name-database-1954-2016)
+- [Hungarian first name database @data.world](https://data.world/tarkomatas/hungarian-first-and-middle-name-database-1954-2016)
+- [Common Chinese Names](http://technology.chtsai.org/namefreq/)
 
 ## Requirements
 
